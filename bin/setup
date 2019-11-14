@@ -11,8 +11,10 @@ def system!(*args)
 end
 
 FileUtils.chdir APP_ROOT do
-  # This script is a way to setup or update your development environment automatically.
-  # This script is idempotent, so that you can run it at anytime and get an expectable outcome.
+  # This script is a way to setup or update your development environment
+  # automatically.
+  # This script is idempotent, so that you can run it at anytime and get an
+  # expectable outcome.
   # Add necessary setup steps to this file.
 
   puts '== Installing dependencies =='
@@ -20,7 +22,7 @@ FileUtils.chdir APP_ROOT do
   system('bundle check') || system!('bundle install')
 
   # Install JavaScript dependencies
-  # system('bin/yarn')
+  system('bin/yarn')
 
   # puts "\n== Copying sample files =="
   # unless File.exist?('config/database.yml')
