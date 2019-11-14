@@ -31,6 +31,9 @@ gem 'bootsnap', '>= 1.4.2', require: false
 
 # The official AWS SDK for Ruby. http://aws.amazon.com/sdkforruby
 gem 'aws-sdk', '~> 3'
+# Pure Ruby gem that implements the MQTT protocol, a lightweight protocol for
+# publish/subscribe messaging.
+gem 'mqtt', github: 'njh/ruby-mqtt'
 
 group :development, :test do
   # Call 'byebug' anywhere in the code to stop execution and get a debugger
@@ -52,6 +55,8 @@ group :development do
   # background. Read more: https://github.com/rails/spring
   gem 'spring'
   gem 'spring-watcher-listen', '~> 2.0.0'
+  # A small gem which causes rails console to open pry.
+  gem 'pry-rails'
 end
 
 group :test do
