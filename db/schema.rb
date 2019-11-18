@@ -19,11 +19,6 @@ ActiveRecord::Schema.define(version: 2019_11_13_114547) do
     t.string "thing_name", null: false
     t.text "thing_arn", null: false
     t.text "thing_id", null: false
-    t.text "certificate_arn", null: false
-    t.text "certificate_id", null: false
-    t.text "certificate_pem", null: false
-    t.text "key_pair_public_key", null: false
-    t.text "key_pair_private_key", null: false
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
   end

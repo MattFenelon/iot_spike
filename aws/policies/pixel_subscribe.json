@@ -4,14 +4,7 @@
     {
       "Effect": "Allow",
       "Action": "iot:Subscribe",
-      "Resource": [
-        "arn:aws:iot:eu-west-1:387630405821:topicfilter/$aws/things/${iot:Connection.Thing.ThingName}/shadow/update/accepted",
-        "arn:aws:iot:eu-west-1:387630405821:topicfilter/$aws/things/${iot:Connection.Thing.ThingName}/shadow/delete/accepted",
-        "arn:aws:iot:eu-west-1:387630405821:topicfilter/$aws/things/${iot:Connection.Thing.ThingName}/shadow/get/accepted",
-        "arn:aws:iot:eu-west-1:387630405821:topicfilter/$aws/things/${iot:Connection.Thing.ThingName}/shadow/update/rejected",
-        "arn:aws:iot:eu-west-1:387630405821:topicfilter/$aws/things/${iot:Connection.Thing.ThingName}/shadow/delete/rejected",
-        "arn:aws:iot:eu-west-1:387630405821:topicfilter/$aws/things/${iot:Connection.Thing.ThingName}/shadow/get/rejected"
-      ]
+      "Resource": "arn:aws:iot:eu-west-1:387630405821:topicfilter/$aws/things/#"
     }
   ]
 }

@@ -1,47 +1,15 @@
 # frozen_string_literal: true
 
 class Thing < ApplicationRecord
-  before_create(
-    :aws_iot_create_keys_and_certificate,
-    :aws_iot_attach_policy,
-    :aws_iot_create_thing
-  )
-
+  CONTROL_PLANE_CERT = ENV['CONTROL_PLANE_CERT']
   CONTROL_PLANE_PRIVATE_KEY = ENV['CONTROL_PLANE_PRIVATE_KEY']
   CONTROL_PLANE_PUBLIC_KEY = ENV['CONTROL_PLANE_PUBLIC_KEY']
-  CONTROL_PLANE_CERT = ENV['CONTROL_PLANE_CERT']
 
-  def aws_iot_attach_policy
-    # TODO: Programatically create policy. Serverless?
-    client = Aws::IoT::Client.new
-    %w[PixelConnect PixelSubscribe PixelPublish PixelReceive].each do |name|
-      client.attach_policy(
-        policy_name: name,
-        target: certificate_arn
-      )
-    end
-  end
+  DEVICE_CERT = ENV['DEVICE_CERT']
+  DEVICE_CERT_ARN = ENV['DEVICE_CERT_ARN']
+  DEVICE_PRIVATE_KEY = ENV['DEVICE_PRIVATE_KEY']
 
-  def aws_iot_create_keys_and_certificate
-    client = Aws::IoT::Client.new
-    keys_and_cert = client.create_keys_and_certificate(
-      # Can be used to check if a certificate is on a Certificate Revocation
-      # List (CRL).
-      #
-      # 1. Create the certificate, deactivated
-      # 2. Wait for the device to initiate connection
-      # 3. Check the CRL
-      #   a. If on the CRL - Go no further
-      # 4. Activate the certificate
-      set_as_active: true
-    )
-
-    self.certificate_arn = keys_and_cert.certificate_arn
-    self.certificate_id = keys_and_cert.certificate_id
-    self.certificate_pem = keys_and_cert.certificate_pem
-    self.key_pair_public_key = keys_and_cert.key_pair.public_key
-    self.key_pair_private_key = keys_and_cert.key_pair.private_key
-  end
+  before_create :aws_iot_create_thing
 
   def aws_iot_create_thing
     # TODO: Add attributes
@@ -58,12 +26,8 @@ class Thing < ApplicationRecord
 
     client.attach_thing_principal(
       thing_name: thing_name,
-      principal: certificate_arn
+      principal: DEVICE_CERT_ARN
     )
-  end
-
-  def delta_topic
-    "$aws/things/#{thing_name}/shadow/update/delta"
   end
 
   def off
@@ -77,8 +41,8 @@ class Thing < ApplicationRecord
       ssl: true,
       # TODO: Verify server SSL cert
       # ca_file: path_to('root-ca.pem'),
-      cert: certificate_pem,
-      key: key_pair_private_key
+      cert: DEVICE_CERT,
+      key: DEVICE_PRIVATE_KEY
     )
 
     client.connect(thing_name) do |c|
@@ -114,8 +78,8 @@ class Thing < ApplicationRecord
       ssl: true,
       # TODO: Verify server SSL cert
       # ca_file: path_to('root-ca.pem'),
-      cert: certificate_pem,
-      key: key_pair_private_key
+      cert: DEVICE_CERT,
+      key: DEVICE_PRIVATE_KEY
     )
 
     client.connect(thing_name) do |c|
@@ -150,14 +114,14 @@ class Thing < ApplicationRecord
       ssl: true,
       # TODO: Verify server SSL cert
       # ca_file: path_to('root-ca.pem'),
-      cert: certificate_pem,
-      key: key_pair_private_key
+      cert: DEVICE_CERT,
+      key: DEVICE_PRIVATE_KEY
     )
 
     puts 'connecting...'
     client.connect(thing_name) do |c|
       puts 'waiting for message...'
-      c.get do |topic, payload|
+      c.get('$aws/things/#') do |topic, payload|
         payload = JSON.parse(payload)
         puts "message received on #{topic}:\n#{payload}"
 

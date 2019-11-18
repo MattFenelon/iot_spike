@@ -4,11 +4,7 @@
     {
       "Effect": "Allow",
       "Action": "iot:Publish",
-      "Resource": [
-        "arn:aws:iot:eu-west-1:387630405821:topic/$aws/things/${iot:Connection.Thing.ThingName}/shadow/update",
-        "arn:aws:iot:eu-west-1:387630405821:topic/$aws/things/${iot:Connection.Thing.ThingName}/shadow/delete",
-        "arn:aws:iot:eu-west-1:387630405821:topic/$aws/things/${iot:Connection.Thing.ThingName}/shadow/get"
-      ]
+      "Resource": "arn:aws:iot:eu-west-1:387630405821:topic/$aws/things/*"
     }
   ]
 }
