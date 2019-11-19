@@ -30,77 +30,50 @@ class Thing < ApplicationRecord
     )
   end
 
-  def off
-    host =
-      Aws::IoT::Client.new
-        .describe_endpoint(endpoint_type: 'iot:Data-ATS')
-        .endpoint_address
+  def log(app, out, message = nil)
+    message = message.presence && "\n\n#{JSON.pretty_generate(message)}\n\n"
 
-    client = MQTT::Client.new(
-      host: host,
-      ssl: true,
-      # TODO: Verify server SSL cert
-      # ca_file: path_to('root-ca.pem'),
-      cert: DEVICE_CERT,
-      key: DEVICE_PRIVATE_KEY
-    )
-
-    client.connect(thing_name) do |c|
-      puts 'publishing...'
-      c.publish(
-        "$aws/things/#{thing_name}/shadow/update",
-        {
-          state: {
-            reported: {
-              on: false
-            }
-          },
-          # If used, the Device Shadow service processes the update only if the
-          # specified version matches the latest version it has.
-          # version: ?,
-          clientToken: "MQTT/#{MQTT::VERSION} pixel/0.1"
-        }.to_json,
-        false,
-        1
-      )
-    end
+    puts "#{app} -> #{out}#{message}"
   end
 
-  def on
-    # TODO: Should the device make this call or have it baked in?
-    host =
-      Aws::IoT::Client.new
-        .describe_endpoint(endpoint_type: 'iot:Data-ATS')
-        .endpoint_address
+  def off(client)
+    topic = "$aws/things/#{thing_name}/shadow/update"
+    message = {
+      state: {
+        desired: nil,
+        reported: {
+          on: false
+        }
+      },
+      # If used, the Device Shadow service processes the update only if the
+      # specified version matches the latest version it has.
+      # version: ?,
+      clientToken: "MQTT/#{MQTT::VERSION} pixel/0.1"
+    }
 
-    client = MQTT::Client.new(
-      host: host,
-      ssl: true,
-      # TODO: Verify server SSL cert
-      # ca_file: path_to('root-ca.pem'),
-      cert: DEVICE_CERT,
-      key: DEVICE_PRIVATE_KEY
-    )
+    log 'PIXEL', "publishing message to #{topic}", message
 
-    client.connect(thing_name) do |c|
-      puts 'publishing...'
-      c.publish(
-        "$aws/things/#{thing_name}/shadow/update",
-        {
-          state: {
-            reported: {
-              on: true
-            }
-          },
-          # If used, the Device Shadow service processes the update only if the
-          # specified version matches the latest version it has.
-          # version: ?,
-          clientToken: "MQTT/#{MQTT::VERSION} pixel/0.1"
-        }.to_json,
-        false,
-        1
-      )
-    end
+    client.publish(topic, message.to_json, false, 1)
+  end
+
+  def on(client)
+    topic = "$aws/things/#{thing_name}/shadow/update"
+    message = {
+      state: {
+        desired: nil,
+        reported: {
+          on: true
+        }
+      },
+      # If used, the Device Shadow service processes the update only if the
+      # specified version matches the latest version it has.
+      # version: ?,
+      clientToken: "MQTT/#{MQTT::VERSION} pixel/0.1"
+    }
+
+    log 'PIXEL', "publishing message to #{topic}", message
+
+    client.publish(topic, message.to_json, false, 1)
   end
 
   def receive_state_changes
@@ -118,14 +91,15 @@ class Thing < ApplicationRecord
       key: DEVICE_PRIVATE_KEY
     )
 
-    puts 'connecting...'
     client.connect(thing_name) do |c|
-      puts 'waiting for message...'
       c.get('$aws/things/#') do |topic, payload|
         payload = JSON.parse(payload)
-        puts "message received on #{topic}:\n#{payload}"
+        log 'PIXEL', "message received on #{topic}", payload
 
-        puts 'waiting for message...'
+        delta_topic = topic.end_with?('/shadow/update/delta')
+
+        on(client) if delta_topic && payload['state']['on']
+        off(client) if delta_topic && payload['state']['on'] == false
       end
     end
   end
@@ -146,23 +120,57 @@ class Thing < ApplicationRecord
     )
 
     client.connect('control_plane') do |c|
-      puts 'publishing...'
-      c.publish(
-        "$aws/things/#{thing_name}/shadow/update",
-        {
-          state: {
-            desired: {
-              on: true
-            }
-          },
-          # If used, the Device Shadow service processes the update only if the
-          # specified version matches the latest version it has.
-          # version: ?,
-          clientToken: "MQTT/#{MQTT::VERSION} control_plane/0.1"
-        }.to_json,
-        false,
-        1
-      )
+      topic = "$aws/things/#{thing_name}/shadow/update"
+      message = {
+        state: {
+          desired: {
+            on: true
+          }
+        },
+        # If used, the Device Shadow service processes the update only if the
+        # specified version matches the latest version it has.
+        # version: ?,
+        clientToken: "MQTT/#{MQTT::VERSION} control_plane/0.1"
+      }
+
+      log 'CONTROL_PLANE', "publishing message to #{topic}", message
+
+      c.publish(topic, message.to_json, false, 1)
+    end
+  end
+
+  def turn_off
+    host =
+      Aws::IoT::Client.new
+        .describe_endpoint(endpoint_type: 'iot:Data-ATS')
+        .endpoint_address
+
+    client = MQTT::Client.new(
+      host: host,
+      ssl: true,
+      # TODO: Verify server SSL cert
+      # ca_file: path_to('root-ca.pem'),
+      cert: CONTROL_PLANE_CERT,
+      key: CONTROL_PLANE_PRIVATE_KEY
+    )
+
+    client.connect('control_plane') do |c|
+      topic = "$aws/things/#{thing_name}/shadow/update"
+      message = {
+        state: {
+          desired: {
+            on: false
+          }
+        },
+        # If used, the Device Shadow service processes the update only if the
+        # specified version matches the latest version it has.
+        # version: ?,
+        clientToken: "MQTT/#{MQTT::VERSION} control_plane/0.1"
+      }
+
+      log 'CONTROL_PLANE', "publishing message to #{topic}", message
+
+      c.publish(topic, message.to_json, false, 1)
     end
   end
 end
