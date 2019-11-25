@@ -18,19 +18,28 @@ module Control
       things = client.list_things.things.map do |thing|
         shadow = data_plane_client
           .get_thing_shadow(thing_name: thing.thing_name)
-          .payload
+          .payload.string
 
-        state = JSON.parse(shadow.string)['state']['reported']
+        state = JSON.parse(shadow)['state']['reported']
 
-        { thing_name: thing.thing_name, state: state }
+        serialise(thing.thing_name, state)
       end
 
       transmit(things)
 
       control_plane = Control::ControlPlane.new
-      control_plane.receive_state_changes do |thing_name, message|
-        transmit(thing_name: thing_name, message: message)
+      control_plane.receive_state_changes do |thing_name, state|
+        transmit([serialise(thing_name, state)])
       end
+    end
+
+    private
+
+    def serialise(name, state)
+      {
+        name: name,
+        state: state
+      }
     end
   end
 end

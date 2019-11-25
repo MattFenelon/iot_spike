@@ -24,7 +24,7 @@ module Control
           accepted_topic = topic_parts[-2..-1] == %w[update accepted]
           thing_name = topic_parts[2]
 
-          yield thing_name, payload if accepted_topic
+          yield thing_name, payload['state']['reported'] if accepted_topic
         end
       end
     end
