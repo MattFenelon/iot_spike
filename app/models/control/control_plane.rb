@@ -38,7 +38,7 @@ module Control
     end
 
     def log(app, out, message = nil)
-      message = message.presence && "\n\n#{JSON.pretty_generate(message)}\n\n"
+      message = message.presence && "\n#{JSON.pretty_generate(message)}\n\n"
 
       puts "#{app} -> #{out}#{message}"
     end
@@ -61,7 +61,7 @@ module Control
 
     def pixels_change_state(desired_state)
       connect do |c|
-        Thing.each do |thing|
+        Device::Pixel.each do |thing|
           topic = "$aws/things/#{thing.thing_name}/shadow/update"
           message = {
             state: {
