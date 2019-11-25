@@ -15,8 +15,8 @@ module Control
     end
 
     def receive_state_changes
-      connect do |c|
-        c.get('$aws/things/#') do |topic, payload|
+      connect do |connected_client|
+        connected_client.get('$aws/things/#') do |topic, payload|
           payload = JSON.parse(payload)
           log 'CONTROL_PLANE', "message received on #{topic}", payload
 
@@ -24,7 +24,19 @@ module Control
           accepted_topic = topic_parts[-2..-1] == %w[update accepted]
           thing_name = topic_parts[2]
 
-          yield thing_name, payload['state']['reported'] if accepted_topic
+          next if accepted_topic == false
+
+          # TODO: Encapsulate this in the channel somehow (public methods are
+          # made available as actions by default.)
+          Control::ControlChannel.broadcast_to(
+            self,
+            [
+              {
+                name: thing_name,
+                state: payload['state']['reported']
+              }
+            ]
+          )
         end
       end
     end
@@ -32,8 +44,14 @@ module Control
     private
 
     def connect
-      mqtt_client.connect('control_plane') do |c|
-        yield c
+      if @connected_client
+        yield @connected_client
+      else
+        mqtt_client.connect('control_plane') do |connected_client|
+          @connected_client = connected_client
+          yield connected_client
+          @connected_client = nil
+        end
       end
     end
 

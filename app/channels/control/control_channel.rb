@@ -5,6 +5,9 @@ module Control
     def subscribed
       Rails.logger.debug "#{self} -> subscribed"
 
+      @control_plane = Control::ControlPlane.new
+      stream_for @control_plane
+
       client = Aws::IoT::Client.new
       iot_endpoint =
         Aws::IoT::Client.new
@@ -27,13 +30,19 @@ module Control
 
       transmit(things)
 
-      control_plane = Control::ControlPlane.new
-      control_plane.receive_state_changes do |thing_name, state|
-        transmit([serialise(thing_name, state)])
+      @control_plane_thread = Thread.new do
+        control_plane.receive_state_changes
       end
     end
 
+    def unsubscribed
+      control_plane_thread&.kill
+    end
+
     private
+
+    attr_accessor :control_plane
+    attr_accessor :control_plane_thread
 
     def serialise(name, state)
       {
