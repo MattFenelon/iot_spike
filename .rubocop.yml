@@ -4,3 +4,6 @@ Style/Documentation:
 
 Layout/MultilineMethodCallIndentation:
   EnforcedStyle: indented
+
+Metrics/MethodLength:
+  Enabled: false
