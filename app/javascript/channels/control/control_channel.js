@@ -2,16 +2,23 @@ import consumer from "../consumer"
 
 consumer.subscriptions.create("Control::ControlChannel", {
   connected() {
-    // const addDevice = document.getElementById("add-device")
-    //
-    // addDevice.disabled = false
-    //
-    // addDevice.addEventListener(
-    //   "click",
-    //   function() {
-    //     this.perform('add')
-    //   }.bind(this)
-    // )
+    const pixelController = document.getElementById('pixel-controller')
+
+    pixelController.disabled = false
+    pixelController.dataset.action = true
+
+    pixelController.addEventListener(
+      "click",
+      function(event) {
+        const button = event.target
+        const turningOn = button.dataset.action == 'true'
+
+        this.perform('power', { on: turningOn })
+
+        button.dataset.action = turningOn ? false : true
+        button.innerText = turningOn ? 'Off' : 'On'
+      }.bind(this)
+    )
   },
 
   disconnected() {

@@ -4,7 +4,7 @@
     {
       "Effect": "Allow",
       "Action": "iot:Publish",
-      "Resource": "arn:aws:iot:eu-west-1:387630405821:topic/$aws/things/*"
+      "Resource": "arn:aws:iot:eu-west-1:387630405821:topic/$aws/things/${iot:Connection.Thing.ThingName}/*"
     }
   ]
 }

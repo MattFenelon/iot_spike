@@ -18,14 +18,22 @@ module Device
 
     def receive_state_changes
       connect do |connected_client|
-        connected_client.get('$aws/things/#') do |topic, payload|
+        connected_client.get("$aws/things/#{thing_name}/#") do |topic, payload|
           payload = JSON.parse(payload)
           log 'PIXEL', "message received on #{topic}", payload
 
           delta_topic = topic.end_with?('/shadow/update/delta')
 
-          on(client) if delta_topic && payload['state']['on']
-          off(client) if delta_topic && payload['state']['on'] == false
+          next unless delta_topic
+
+          turning_on = payload.dig('state', 'on')
+          next if turning_on.nil?
+
+          if turning_on
+            on
+          else
+            off
+          end
         end
       end
     end
@@ -56,8 +64,8 @@ module Device
         yield @connected_client
       else
         mqtt_client.connect(thing_name) do |connected_client|
-          @connected_client = connected_client
-          yield connected_client
+          yield @connected_client = connected_client
+        ensure
           @connected_client = nil
         end
       end

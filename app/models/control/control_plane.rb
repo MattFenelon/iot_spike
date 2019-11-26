@@ -20,11 +20,13 @@ module Control
           payload = JSON.parse(payload)
           log 'CONTROL_PLANE', "message received on #{topic}", payload
 
+          next unless payload['clientToken'].include?('pixel/')
+
           topic_parts = topic.split('/')
           accepted_topic = topic_parts[-2..-1] == %w[update accepted]
           thing_name = topic_parts[2]
 
-          next if accepted_topic == false
+          next unless accepted_topic
 
           # TODO: Encapsulate this in the channel somehow (public methods are
           # made available as actions by default.)
@@ -48,8 +50,8 @@ module Control
         yield @connected_client
       else
         mqtt_client.connect('control_plane') do |connected_client|
-          @connected_client = connected_client
-          yield connected_client
+          yield @connected_client = connected_client
+        ensure
           @connected_client = nil
         end
       end
@@ -79,7 +81,7 @@ module Control
 
     def pixels_change_state(desired_state)
       connect do |c|
-        Device::Pixel.each do |thing|
+        Device::Pixel.all.each do |thing|
           topic = "$aws/things/#{thing.thing_name}/shadow/update"
           message = {
             state: {
